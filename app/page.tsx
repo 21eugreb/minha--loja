@@ -1,17 +1,42 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+"use client";
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, ShoppingCart } from "lucide-react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
-const CartContext = createContext();
-const useCart = () => useContext(CartContext);
+type Product = {
+  id: string;
+  title: string;
+  description: string;
+  handle: string;
+  images: {
+    edges: {
+      node: {
+        url: string;
+      };
+    }[];
+  };
+};
 
-function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState([]);
-  const addToCart = (product) => setCartItems((prev) => [...prev, product]);
+type CartContextType = {
+  cartItems: Product[];
+  addToCart: (product: Product) => void;
+};
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) throw new Error("useCart deve ser usado dentro do CartProvider");
+  return context;
+};
+
+function CartProvider({ children }: { children: ReactNode }) {
+  const [cartItems, setCartItems] = useState<Product[]>([]);
+  const addToCart = (product: Product) => setCartItems((prev) => [...prev, product]);
   return <CartContext.Provider value={{ cartItems, addToCart }}>{children}</CartContext.Provider>;
 }
 
@@ -30,7 +55,7 @@ function CartIcon() {
 }
 
 export default function HomePage() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -64,7 +89,7 @@ export default function HomePage() {
         })
       });
       const json = await res.json();
-      const items = json.data.products.edges.map(edge => edge.node);
+      const items = json.data.products.edges.map((edge: any) => edge.node);
       setProducts(items);
     }
 
@@ -108,7 +133,7 @@ export default function HomePage() {
   );
 }
 
-function ProductCard({ product }) {
+function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const router = useRouter();
   const imageUrl = product.images?.edges[0]?.node?.url || "https://via.placeholder.com/300x200";
